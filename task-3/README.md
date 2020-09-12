@@ -15,3 +15,8 @@ us-east-dns = tf-lb-20200912130640827600000001-49299620.us-east-1.elb.amazonaws.
 us-west-dns = tf-lb-20200912131812801700000001-1321873644.us-west-2.elb.amazonaws.com
 ```
 
+Note:
+AWS has expanded its infra and have added many components to its AZs 
+this command was needed for me to filter the AZs that we wont use when crating a web infra
+   `aws ec2 describe-availability-zones --region us-west-2 --all-availability-zones`
+
