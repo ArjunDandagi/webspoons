@@ -43,10 +43,7 @@ I am still digging on that one
 
 
 ## NOTES (To: Reviewer):
-I Believe this solution is also can extended to third task as well 
-hence i created a symlink . stay on this folder anyway and
-change the parameters on autoscaling and see if its suffice to say it works 
-
+ 
 my curl version on mac = `curl 7.64.1`
 
 I tried it on one of the ec2 it worked perfectly fine:
