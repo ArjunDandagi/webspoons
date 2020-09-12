@@ -14,8 +14,25 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnet_ids" "sids" {
+  vpc_id = data.aws_vpc.default.id
+}
+
+data "aws_availability_zones" "azs" {
+  all_availability_zones = true
+  exclude_names = ["us-east-1-wl1-bos-wlz-1"]
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
 resource "aws_security_group" "port_80" {
-  name = "port_80_sg_for_task_1_arjun"
+  name = "port_80_sg_for_task_2_arjun"
   ingress {
     from_port = 80
     protocol = "tcp"
@@ -30,17 +47,56 @@ resource "aws_security_group" "port_80" {
   }
 }
 
-
-resource "aws_instance" "web" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
-  user_data = file("user-data.txt")
-  tags = {
-    Name = "Web-server-task-1"
+resource "aws_elb" "elb" {
+  listener {
+    instance_port = 80
+    instance_protocol = "http"
+    lb_port = 80
+    lb_protocol = "http"
   }
-  security_groups = ["port_80_sg_for_task_1_arjun"]
+  health_check {
+    healthy_threshold = 2
+    interval = 5
+    target = "http:80/"
+    timeout = 3
+    unhealthy_threshold = 3
+  }
+  security_groups = [aws_security_group.port_80.id]
+  availability_zones = data.aws_availability_zones.azs.names
 }
 
-output "public_ip" {
-  value = aws_instance.web.public_ip
+
+module "asg" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "~> 3.0"
+  load_balancers = [aws_elb.elb.name]
+  name = "web-service"
+
+  # Launch configuration
+  lc_name = "web-service-lc-task2"
+  user_data = file("user-data.txt")
+
+  image_id        = data.aws_ami.ubuntu.id
+  instance_type   = "t2.micro"
+  security_groups = [aws_security_group.port_80.id]
+
+  # Auto scaling group
+  asg_name                  = "web-service-asg-task-2"
+  vpc_zone_identifier       = data.aws_subnet_ids.sids.ids
+  health_check_type         = "ELB"
+  min_size                  = 4
+  max_size                  = 6
+  desired_capacity          = 4
+  wait_for_capacity_timeout = 0
+
+  tags = [
+    {
+      key                 = "Name"
+      value               = "web-server-task-2"
+      propagate_at_launch = true
+    },
+  ]
+}
+output "dns_endpoint" {
+  value = aws_elb.elb.dns_name
 }
