@@ -26,6 +26,8 @@ resource "aws_db_instance" "default" {
   password             = var.password
   parameter_group_name = "default.mysql5.7"
   vpc_security_group_ids = [aws_security_group.port_3306.id]
+  backup_retention_period = 1
+  apply_immediately = true
 }
 
 output "db_endpoint" {
